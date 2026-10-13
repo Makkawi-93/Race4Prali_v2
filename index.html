@@ -242,10 +242,65 @@
       text-transform:uppercase;text-align:center;padding:3px 0}
 
     @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+    /* ---------- PHONE (same layout as desktop, scaled down + touch-friendly) ---------- */
+    #tb-menu{display:none}
+    #m-info{display:none}
     @media (max-width:760px){
-      #tb-nav button{padding:8px 12px;font-size:12px}
+      :root{--topbar-h:58px;--rail-w:68px}
+      #topbar{gap:8px;padding:0 10px}
+      #tb-logo{gap:6px;min-width:0}
+      #tb-logo img{height:42px}
+      #tb-logo .word{font-size:14px}
       #tb-logo .tag{display:none}
-      #panel{width:calc(100vw - var(--rail-w))}
+      /* the 5 top links move into a dropdown opened by the ☰ button */
+      #tb-nav{display:none;position:absolute;top:calc(var(--topbar-h) - 4px);right:10px;margin:0;
+        flex-direction:column;gap:6px;background:var(--snow);padding:10px;border-radius:14px;
+        box-shadow:var(--shadow);min-width:180px}
+      #topbar.menu-open #tb-nav{display:flex}
+      #tb-nav button{padding:12px 16px;font-size:14px;text-align:left}
+      #tb-lang{gap:5px}
+      #tb-lang button{width:36px;height:36px}
+      #tb-menu{display:flex;align-items:center;justify-content:center;width:40px;height:40px;flex:0 0 auto;
+        border:0;border-radius:10px;background:var(--logo-navy);color:#fff;font-size:20px;cursor:pointer;font-family:inherit}
+      #tb-menu:focus-visible{outline:3px solid var(--logo-blue-light);outline-offset:2px}
+
+      /* rail: same buttons, icons, labels and colours, just narrower */
+      #rail{padding:8px 5px;gap:4px}
+      #rail button{min-height:58px;border-radius:12px;padding:6px 2px;gap:3px}
+      #rail button .ic{height:22px}
+      #rail button .ic img{height:21px}
+      #rail button .lb{font-size:9px}
+      #rail button:hover{transform:none}
+
+      /* panel: slides from the left as on desktop, but leaves a strip of map visible */
+      #panel{width:calc(100vw - var(--rail-w) - 40px)}
+      #p-head{padding:14px 12px 10px}
+      #p-back,#p-close{width:36px;height:36px;font-size:16px}
+      #p-body{padding:2px 12px 24px}
+      #d-tabs{padding:0 12px 10px}
+      #d-tabs button{padding:11px 4px}
+      .rrow{padding:11px 8px}
+      .lrow{padding:10px 4px}
+      .lrow input{width:20px;height:20px}
+      #rsearch{font-size:16px} /* 16px stops iOS from zooming into the field */
+      .modal-card input{font-size:16px}
+
+      /* map controls: pinch replaces zoom buttons, measure is impractical by finger */
+      .leaflet-control-zoom,.leaflet-control-measure{display:none!important}
+      .leaflet-control-attribution{font-size:9px;max-width:calc(100vw - var(--rail-w));
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+      /* "Info" pill: brings the route panel back after it hides to show the route */
+      #m-info{position:fixed;left:calc(var(--rail-w) + 12px);right:12px;bottom:calc(26px + env(safe-area-inset-bottom));
+        z-index:1450;display:flex;align-items:center;gap:10px;border:0;border-radius:999px;
+        background:var(--snow);color:var(--navy);font-family:inherit;font-weight:800;font-size:14px;
+        padding:10px 16px 10px 10px;box-shadow:0 8px 24px rgba(12,35,56,.28);cursor:pointer;text-align:left}
+      #m-info[hidden]{display:none}
+      #m-info .mi-num{flex:0 0 30px;height:30px;border-radius:50%;color:#fff;font-size:13px;
+        display:flex;align-items:center;justify-content:center}
+      #m-info .mi-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      #m-info .mi-go{flex:0 0 auto;background:var(--amber);color:var(--navy-ink);border-radius:999px;
+        padding:6px 12px;font-size:12px}
     }
     </style>
 </head>
@@ -268,6 +323,7 @@
         <button data-lang="it" class="sel">IT</button>
         <button data-lang="en">EN</button>
       </div>
+      <button id="tb-menu" aria-label="Menu" aria-expanded="false">&#9776;</button>
     </header>
 
     <!-- ============ RAIL ============ -->
@@ -295,6 +351,9 @@
       </div>
       <div id="p-body"></div>
     </aside>
+
+    <!-- phone only: reopens the route panel after it hides to reveal the route -->
+    <button id="m-info" hidden></button>
 
     <!-- ============ GEOLOGY LOGIN MODAL (Supabase Auth) ============ -->
     <div id="auth-modal" hidden>
@@ -850,7 +909,7 @@
             panelKey=k; view='list'; selRoute=null; tab='t1';
             document.querySelectorAll('#rail button[data-p]').forEach(function(x){ x.classList.toggle('sel', x===b); });
             document.getElementById('rail-geology').classList.remove('sel');
-            clearEmphasis(); hideElevMarker();
+            clearEmphasis(); hideElevMarker(); hideInfoPill();
             renderPanel();
             panel.classList.add('on'); panel.setAttribute('aria-hidden','false');
         });
@@ -861,9 +920,39 @@
         panel.classList.remove('on','detail-mode'); panel.setAttribute('aria-hidden','true');
         document.querySelectorAll('#rail button[data-p]').forEach(function(x){ x.classList.remove('sel'); });
         document.getElementById('rail-geology').classList.remove('sel');
-        clearEmphasis(); hideElevMarker();
+        clearEmphasis(); hideElevMarker(); hideInfoPill();
     }
     document.getElementById('p-close').addEventListener('click', closePanel);
+
+    /* ---------------- phone helpers ---------------- */
+    const mInfo=document.getElementById('m-info'), phoneMQ=window.matchMedia('(max-width:760px)');
+    function isPhone(){ return phoneMQ.matches; }
+    function hideInfoPill(){ mInfo.hidden=true; }
+    /* hide the panel so the map is visible; a route stays selected behind the pill */
+    function minimizePanel(){
+        if(view!=='detail' || selRoute===null){ closePanel(); return; }
+        var r=ROUTES.find(function(x){return x.n===selRoute;});
+        panel.classList.remove('on'); panel.setAttribute('aria-hidden','true');
+        mInfo.innerHTML='<span class="mi-num" style="background:'+r.col+'">'+r.n+'</span>'+
+            '<span class="mi-name">'+r[lang].name+'</span><span class="mi-go">Info</span>';
+        mInfo.hidden=false;
+    }
+    mInfo.addEventListener('click', function(){
+        hideInfoPill(); renderPanel();
+        panel.classList.add('on'); panel.setAttribute('aria-hidden','false');
+    });
+    /* tapping the map (or the map strip beside the panel) hides the panel on phones */
+    map.on('click', function(){ if(isPhone() && panel.classList.contains('on')) minimizePanel(); });
+    phoneMQ.addEventListener && phoneMQ.addEventListener('change', function(){
+        if(!isPhone() && !mInfo.hidden){ mInfo.click(); }
+    });
+
+    /* ☰ menu for the top links on phones */
+    const topbar=document.getElementById('topbar'), tbMenu=document.getElementById('tb-menu');
+    function setMenu(open){ topbar.classList.toggle('menu-open', open); tbMenu.setAttribute('aria-expanded', open); }
+    tbMenu.addEventListener('click', function(e){ e.stopPropagation(); setMenu(!topbar.classList.contains('menu-open')); });
+    document.querySelectorAll('#tb-nav button').forEach(function(b){ b.addEventListener('click', function(){ setMenu(false); }); });
+    document.addEventListener('click', function(e){ if(!document.getElementById('tb-nav').contains(e.target)) setMenu(false); });
     document.getElementById('p-back').addEventListener('click', function(){
         view='list'; selRoute=null; clearEmphasis(); hideElevMarker(); renderPanel();
     });
@@ -909,7 +998,7 @@
     function openGeologyPanel(){
         document.querySelectorAll('#rail button[data-p]').forEach(function(x){ x.classList.remove('sel'); });
         railGeologyBtn.classList.add('sel');
-        clearEmphasis(); hideElevMarker();
+        clearEmphasis(); hideElevMarker(); hideInfoPill();
         panelKey=null; view='list'; selRoute=null;
         panel.classList.remove('detail-mode');
         pTitle.textContent = UI[lang].geology;
@@ -1123,11 +1212,19 @@
         document.getElementById('rail-geology').classList.remove('sel');
         document.querySelectorAll('#d-tabs button').forEach(function(b){ b.classList.toggle('sel', b.dataset.t==='t1'); });
         renderPanel();
-        panel.classList.add('on'); panel.setAttribute('aria-hidden','false');
         emphasizeRoute(n);
+        if(isPhone()){
+            /* phone: hide the panel so the route is visible; the Info pill reopens it */
+            minimizePanel();
+            map.fitBounds(routeLines[n].getBounds(), {
+                paddingTopLeft:[24,24], paddingBottomRight:[24,90], maxZoom:16
+            });
+            return;
+        }
+        hideInfoPill();
+        panel.classList.add('on'); panel.setAttribute('aria-hidden','false');
         map.fitBounds(routeLines[n].getBounds(), {
-            paddingTopLeft:[Math.round(window.innerWidth<760?60:380),60],
-            paddingBottomRight:[60,60], maxZoom:16
+            paddingTopLeft:[380,60], paddingBottomRight:[60,60], maxZoom:16
         });
     }
     function renderDetail(){
@@ -1178,6 +1275,7 @@
             facMarkers.forEach(function(m){ m.setPopupContent(m.facRef[lang]); });
             ROUTES.forEach(function(r){ if(routeLines[r.n]) routeLines[r.n].setTooltipContent(routeTipHTML(r)); });
             if(panel.classList.contains('on')) renderPanel();
+            else if(!mInfo.hidden) minimizePanel();
         });
     });
     /* apply default language (IT) labels once */
