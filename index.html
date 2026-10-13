@@ -242,11 +242,10 @@
       text-transform:uppercase;text-align:center;padding:3px 0}
 
     @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-    /* ---------- PHONE (same layout as desktop, scaled down + touch-friendly) ---------- */
-    #tb-menu{display:none}
-    #m-info{display:none}
+    /* ---------- PHONE: rail becomes a bottom tab bar, panel becomes a bottom sheet ---------- */
+    #tb-menu,#m-info,#p-grip,.locate-ctl,.nav-btn{display:none}
     @media (max-width:760px){
-      :root{--topbar-h:58px;--rail-w:68px}
+      :root{--topbar-h:58px;--tab-h:64px;--safe-b:env(safe-area-inset-bottom,0px)}
       #topbar{gap:8px;padding:0 10px}
       #tb-logo{gap:6px;min-width:0}
       #tb-logo img{height:42px}
@@ -264,43 +263,67 @@
         border:0;border-radius:10px;background:var(--logo-navy);color:#fff;font-size:20px;cursor:pointer;font-family:inherit}
       #tb-menu:focus-visible{outline:3px solid var(--logo-blue-light);outline-offset:2px}
 
-      /* rail: same buttons, icons, labels and colours, just narrower */
-      #rail{padding:8px 5px;gap:4px}
-      #rail button{min-height:58px;border-radius:12px;padding:6px 2px;gap:3px}
+      /* map uses the full width, between top bar and tab bar */
+      #map{left:0;bottom:calc(var(--tab-h) + var(--safe-b))}
+
+      /* rail -> bottom tab bar: same buttons, icons, labels and colours */
+      #rail{top:auto;bottom:0;right:0;width:auto;height:calc(var(--tab-h) + var(--safe-b));
+        flex-direction:row;align-items:center;padding:5px 6px calc(5px + var(--safe-b));gap:4px;
+        box-shadow:0 -4px 16px rgba(12,35,56,.18)}
+      #rail button{flex:1 1 0;min-width:0;min-height:54px;height:54px;border-radius:12px;padding:5px 2px;gap:3px}
       #rail button .ic{height:22px}
       #rail button .ic img{height:21px}
-      #rail button .lb{font-size:9px}
-      #rail button:hover{transform:none}
+      #rail button .lb{font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+      #rail button:hover{transform:none;background:transparent}
+      #rail button.sel:hover{background:var(--rail-active)}
+      #rail .sep{width:1.5px;height:34px;margin:0 2px;flex:0 0 auto}
+      #rail .spacer{display:none}
 
-      /* panel: slides from the left as on desktop, but leaves a strip of map visible */
-      #panel{width:calc(100vw - var(--rail-w) - 40px)}
-      #p-head{padding:14px 12px 10px}
+      /* panel -> bottom sheet sitting on the tab bar; drag the grip to expand */
+      #panel{left:0;right:0;width:auto;top:auto;bottom:calc(var(--tab-h) + var(--safe-b));
+        height:52vh;height:52dvh;border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(12,35,56,.22);
+        transform:translateY(calc(100% + var(--tab-h) + 40px));transition:transform .35s cubic-bezier(.3,.85,.3,1),height .3s ease}
+      #panel.on{transform:none}
+      #panel.expanded{height:calc(100vh - var(--topbar-h) - var(--tab-h) - var(--safe-b) - 10px);
+        height:calc(100dvh - var(--topbar-h) - var(--tab-h) - var(--safe-b) - 10px)}
+      #p-grip{display:block;border:0;background:transparent;width:100%;padding:9px 0 3px;cursor:grab;touch-action:none}
+      #p-grip::before{content:'';display:block;width:42px;height:5px;border-radius:3px;background:var(--ice-2);margin:0 auto}
+      #p-head{padding:4px 14px 10px;touch-action:none}
       #p-back,#p-close{width:36px;height:36px;font-size:16px}
-      #p-body{padding:2px 12px 24px}
-      #d-tabs{padding:0 12px 10px}
-      #d-tabs button{padding:11px 4px}
+      #p-body{padding:2px 14px 20px;font-size:14px}
+      #d-tabs{padding:0 14px 10px}
+      #d-tabs button{padding:11px 4px;font-size:13px}
       .rrow{padding:11px 8px}
-      .lrow{padding:10px 4px}
+      .rrow .rn{font-size:14px}
+      .lrow{padding:11px 4px;font-size:14px}
       .lrow input{width:20px;height:20px}
       #rsearch{font-size:16px} /* 16px stops iOS from zooming into the field */
       .modal-card input{font-size:16px}
+      #d-actions{flex-wrap:wrap}
+      #d-actions .btn{flex:1 1 auto;padding:13px 17px;font-size:14px}
+      .nav-btn{display:inline-block}
 
       /* map controls: pinch replaces zoom buttons, measure is impractical by finger */
       .leaflet-control-zoom,.leaflet-control-measure{display:none!important}
-      .leaflet-control-attribution{font-size:9px;max-width:calc(100vw - var(--rail-w));
+      .leaflet-control-attribution{font-size:9px;max-width:100vw;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .locate-ctl{display:block;width:40px;height:40px;border:0;border-radius:10px;background:#fff;
+        box-shadow:var(--shadow);font-size:19px;cursor:pointer;color:var(--navy)}
+      .locate-ctl.busy{opacity:.55}
+      .me-dot{width:16px;height:16px;border-radius:50%;background:#2C6FA8;border:3px solid #fff;
+        box-shadow:0 0 0 6px rgba(44,111,168,.25)}
 
-      /* "Info" pill: brings the route panel back after it hides to show the route */
-      #m-info{position:fixed;left:calc(var(--rail-w) + 12px);right:12px;bottom:calc(26px + env(safe-area-inset-bottom));
+      /* "Info" pill: brings the route sheet back after it is hidden to see the map */
+      #m-info{position:fixed;left:12px;right:12px;bottom:calc(var(--tab-h) + var(--safe-b) + 12px);
         z-index:1450;display:flex;align-items:center;gap:10px;border:0;border-radius:999px;
         background:var(--snow);color:var(--navy);font-family:inherit;font-weight:800;font-size:14px;
-        padding:10px 16px 10px 10px;box-shadow:0 8px 24px rgba(12,35,56,.28);cursor:pointer;text-align:left}
+        padding:10px 10px 10px 10px;box-shadow:0 8px 24px rgba(12,35,56,.28);cursor:pointer;text-align:left}
       #m-info[hidden]{display:none}
       #m-info .mi-num{flex:0 0 30px;height:30px;border-radius:50%;color:#fff;font-size:13px;
         display:flex;align-items:center;justify-content:center}
       #m-info .mi-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       #m-info .mi-go{flex:0 0 auto;background:var(--amber);color:var(--navy-ink);border-radius:999px;
-        padding:6px 12px;font-size:12px}
+        padding:7px 14px;font-size:12.5px}
     }
     </style>
 </head>
@@ -339,6 +362,7 @@
 
     <!-- ============ SINGLE PANEL ============ -->
     <aside id="panel" aria-hidden="true">
+      <button id="p-grip" aria-label="Expand panel"></button>
       <div id="p-head">
         <button id="p-back" aria-label="Back to routes">&lsaquo;</button>
         <h2 id="p-title">&mdash;</h2>
@@ -917,7 +941,7 @@
 
     function closePanel(){
         panelKey=null; view='list'; selRoute=null;
-        panel.classList.remove('on','detail-mode'); panel.setAttribute('aria-hidden','true');
+        panel.classList.remove('on','detail-mode','expanded'); panel.setAttribute('aria-hidden','true');
         document.querySelectorAll('#rail button[data-p]').forEach(function(x){ x.classList.remove('sel'); });
         document.getElementById('rail-geology').classList.remove('sel');
         clearEmphasis(); hideElevMarker(); hideInfoPill();
@@ -932,7 +956,7 @@
     function minimizePanel(){
         if(view!=='detail' || selRoute===null){ closePanel(); return; }
         var r=ROUTES.find(function(x){return x.n===selRoute;});
-        panel.classList.remove('on'); panel.setAttribute('aria-hidden','true');
+        panel.classList.remove('on','expanded'); panel.setAttribute('aria-hidden','true');
         mInfo.innerHTML='<span class="mi-num" style="background:'+r.col+'">'+r.n+'</span>'+
             '<span class="mi-name">'+r[lang].name+'</span><span class="mi-go">Info</span>';
         mInfo.hidden=false;
@@ -941,11 +965,40 @@
         hideInfoPill(); renderPanel();
         panel.classList.add('on'); panel.setAttribute('aria-hidden','false');
     });
-    /* tapping the map (or the map strip beside the panel) hides the panel on phones */
+    /* tapping the map hides the bottom sheet on phones */
     map.on('click', function(){ if(isPhone() && panel.classList.contains('on')) minimizePanel(); });
     phoneMQ.addEventListener && phoneMQ.addEventListener('change', function(){
+        panel.classList.remove('expanded');
         if(!isPhone() && !mInfo.hidden){ mInfo.click(); }
     });
+
+    /* bottom sheet: tap the grip to expand/shrink, swipe the header up/down */
+    (function(){
+        var grip=document.getElementById('p-grip'), head=document.getElementById('p-head'), y0=null, fromGrip=false;
+        function down(e){ y0=e.clientY; fromGrip=(e.currentTarget===grip); }
+        function up(e){
+            if(y0===null || !isPhone()) { y0=null; return; }
+            var dy=e.clientY-y0; y0=null;
+            if(Math.abs(dy)<10){ if(fromGrip) panel.classList.toggle('expanded'); return; }
+            if(dy<-40) panel.classList.add('expanded');
+            else if(dy>40){
+                if(panel.classList.contains('expanded')) panel.classList.remove('expanded');
+                else minimizePanel();
+            }
+        }
+        [grip, head].forEach(function(el){
+            el.addEventListener('pointerdown', down);
+            el.addEventListener('pointerup', up);
+            el.addEventListener('pointercancel', function(){ y0=null; });
+        });
+    })();
+
+    /* phone: open in English when the phone is not set to Italian */
+    if(isPhone() && !/^it\b/i.test(navigator.language||'it')){
+        window.addEventListener('load', function(){
+            var en=document.querySelector('#tb-lang button[data-lang="en"]'); if(en) en.click();
+        });
+    }
 
     /* ☰ menu for the top links on phones */
     const topbar=document.getElementById('topbar'), tbMenu=document.getElementById('tb-menu');
@@ -1204,6 +1257,12 @@
     }
 
     /* ---------------- detail view ---------------- */
+    /* Google Maps directions to the first point of a route's track */
+    function navToStartURL(n){
+        var a=routeLines[n].getLatLngs();
+        while(Array.isArray(a[0])) a=a[0];
+        return 'https://www.google.com/maps/dir/?api=1&destination='+a[0].lat.toFixed(6)+','+a[0].lng.toFixed(6);
+    }
     function openDetail(n){
         var r=ROUTES.find(function(x){return x.n===n;});
         panelKey = r.cats.indexOf(panelKey)>-1 ? panelKey : r.cats[0];
@@ -1214,10 +1273,12 @@
         renderPanel();
         emphasizeRoute(n);
         if(isPhone()){
-            /* phone: hide the panel so the route is visible; the Info pill reopens it */
-            minimizePanel();
+            /* phone: half-height sheet; fit the route into the map area above it */
+            hideInfoPill();
+            panel.classList.remove('expanded');
+            panel.classList.add('on'); panel.setAttribute('aria-hidden','false');
             map.fitBounds(routeLines[n].getBounds(), {
-                paddingTopLeft:[24,24], paddingBottomRight:[24,90], maxZoom:16
+                paddingTopLeft:[24,24], paddingBottomRight:[24, panel.offsetHeight+24], maxZoom:16
             });
             return;
         }
@@ -1245,7 +1306,9 @@
               r.stops.map(function(s){ return '<div class="stop"><span class="km">'+s[0]+'</span><span>'+s[1]+'</span><span>'+s[2]+'</span></div>'; }).join('') : '')+
               '<div id="d-actions">'+(r.link
                 ? '<a class="btn primary" href="'+r.link+'" target="_blank" rel="noopener">'+UI[lang].b_source+'</a>'
-                : '<button class="btn primary" disabled>'+UI[lang].b_source+'</button>')+'</div>'+
+                : '<button class="btn primary" disabled>'+UI[lang].b_source+'</button>')+
+                '<a class="btn ghost nav-btn" href="'+navToStartURL(r.n)+'" target="_blank" rel="noopener">&#129517; '+
+                  (lang==='it'?'Portami alla partenza':'Navigate to start')+'</a></div>'+
               '<p class="note">'+UI[lang].geo_note+'</p>';
         }
         if(tab==='t2'){ inner+=renderElevChart(r); }
@@ -1338,6 +1401,34 @@
     });
     map.addControl(new BasemapSwitch());
     L.control.zoom({ position:'topright' }).addTo(map);
+
+    /* "my location" button (shown on phones only, via CSS) */
+    var meMarker=null;
+    var LocateCtl = L.Control.extend({
+        options: { position: 'topright' },
+        onAdd: function(){
+            var btn = L.DomUtil.create('button', 'locate-ctl leaflet-control');
+            btn.type='button'; btn.innerHTML='&#128205;';
+            btn.setAttribute('aria-label', 'My location'); btn.title='My location';
+            L.DomEvent.disableClickPropagation(btn);
+            btn.addEventListener('click', function(){
+                btn.classList.add('busy');
+                map.locate({ setView:true, maxZoom:15, enableHighAccuracy:true });
+            });
+            map.on('locationfound', function(e){
+                btn.classList.remove('busy');
+                var icon=L.divIcon({ className:'', html:'<div class="me-dot"></div>', iconSize:[22,22], iconAnchor:[11,11] });
+                if(meMarker) meMarker.setLatLng(e.latlng);
+                else meMarker=L.marker(e.latlng, { icon:icon, keyboard:false, interactive:false, zIndexOffset:1000 }).addTo(map);
+            });
+            map.on('locationerror', function(){
+                btn.classList.remove('busy');
+                alert(lang==='it' ? 'Posizione non disponibile. Attiva la localizzazione.' : 'Location unavailable. Please enable location access.');
+            });
+            return btn;
+        }
+    });
+    map.addControl(new LocateCtl());
 
     var measureControl = new L.Control.Measure({
         position:'topright', primaryLengthUnit:'meters', secondaryLengthUnit:'kilometers',
